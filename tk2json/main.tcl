@@ -33,7 +33,8 @@ foreach field $fields {
     incr row
 }
 
-grid [ttk::separator .fr.hrule] -row $row -columnspan 2 -sticky ew -padx 4 -pady 4
+grid [ttk::separator .fr.hrule] \
+    -row $row -columnspan 2 -sticky ew -padx 4 -pady 4
 incr row
 
 frame .fr.button -padx 0 -pady 0
@@ -68,7 +69,7 @@ proc readForm {_errors} {
     global fields
     set result ""
 
-    append result "\{\n  \"form\": \"" $::formName "\",\n  \"fields\": \{\n"
+    append result "\{\n  \"form\": \"$::formName\",\n  \"fields\": \{\n"
     foreach field $fields {
         set name        [lindex $field $Field::Name]
         set value       [escapeSpecialChars [string trim [.fr.entry$name get]]]
@@ -79,13 +80,13 @@ proc readForm {_errors} {
         set maxLength   [lindex $field $Field::MaxLength]
 
         if {$length < $minLength} {
-            puts stderr [format "Error: Testing minLength '%s' on field '%s'" $minLength $name]
+            puts stderr "Error testing minLength '$minLength' on field '$name'"
             incr errors
         } elseif {$length > $maxLength} {
-            puts stderr [format "Error: Testing maxLength '%s' on field '%s'" $maxLength $name]
+            puts stderr "Error testing maxLength '$maxLength' on field '$name'"
             incr errors
         }
-        append result "    \"" $name "\": \"" $value "\"" $newline
+        append result "    \"$name\": \"$value\"$newline"
     }
     append result "  \}\n\}"
     return $result
@@ -96,7 +97,7 @@ proc onAccept {} {
     set result [readForm errors]
 
     if {$errors > 0} {
-        puts stderr [format "%d errors found\n\nInvalid data:\n%s" $errors $result]
+        puts "$errors errors found\n\nInvalid data:\n$result"
         exit 1
     } else {
         puts stdout $result
