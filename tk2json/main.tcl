@@ -97,7 +97,7 @@ proc onAccept {} {
     set result [readForm errors]
 
     if {$errors > 0} {
-        puts "$errors errors found\n\nInvalid data:\n$result"
+        puts stderr "$errors errors found\n\nInvalid data:\n$result"
         exit 1
     } else {
         puts stdout $result
