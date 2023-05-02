@@ -1,7 +1,7 @@
 set formName clientes
 set formTitle "Clientes"
 
-#       name           title           width minLength maxLength
+#       Name           Title           Width MinLength MaxLength
 set fields {
     {   id             "Código"        5       1       5       }
     {   name           "Nombre"        50      1       50      }
