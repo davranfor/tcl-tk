@@ -1,36 +1,61 @@
 #!/usr/bin/wish
 
-bind .      <Escape>   {onCancel}
-bind Entry  <Return>   {event generate %W <Tab>}
-bind Entry  <KP_Enter> {event generate %W <Tab>}
-bind Button <Return>   {event generate %W <space>}
-bind Button <KP_Enter> {event generate %W <space>}
+bind .      <Escape>    {onCancel}
+bind Text   <Tab>       {continue}
+bind Text   <KP_Enter>  {event generate %W <Return>}
+bind Button <Return>    {event generate %W <space>}
+bind Button <KP_Enter>  {event generate %W <space>}
 
+#bind Entry  <Return>    {event generate %W <Tab>}
+#bind Entry  <KP_Enter>  {event generate %W <Tab>}
+
+source builder.tcl
+source convert.tcl
 source data.tcl
 
-namespace eval Field {
-    set Name        0
-    set Title       1
-    set Width       2
-    set MinLength   3
-    set MaxLength   4
+namespace eval Form {
+    set Name    0
+    set Title   1
+    set Accept  2
+    set Cancel  3
 }
 
+namespace eval Field {
+    set Widget      0
+    set Name        1
+    set Type        2
+    set Width       3
+    set Height      4
+    set MinLength   5
+    set MaxLength   6
+    set RegExp      7
+}
+
+set widgets {}
+set labels 0
 set row 0
 
 frame .fr -borderwidth 1 -relief raised -padx 4 -pady 4
 
-# Pack label and entry
+# Pack labels and widgets
 foreach field $fields {
-    set name  [lindex $field $Field::Name]
-    set title [lindex $field $Field::Title]
-    set width [lindex $field $Field::Width]
+    set type [lindex $field $Field::Widget]
+    set name [lindex $field $Field::Name]
 
-    grid [label .fr.label$name -text $title] \
-        -row $row -column 0 -sticky w -padx 4 -pady 2
-    grid [entry .fr.entry$name -width $width -highlightthickness 0] \
-        -row $row -column 1 -sticky w -padx 4 -pady 2
-    incr row
+    if {$type eq "label"} {
+        set widget [buildLabel .fr $labels $name]
+        set length [llength $widgets]
+        set fields [lreplace $fields $length $length]
+
+        grid $widget -row $row -column 0 -sticky w -padx 4 -pady 2
+        incr labels
+    } else {
+        set widget [buildField .fr $field $type $name]
+
+        lappend widgets $widget
+        grid $widget -row $row -column 1 -sticky w -padx 4 -pady 2
+        incr row
+    }
 }
 
 grid [ttk::separator .fr.hrule] \
@@ -38,66 +63,28 @@ grid [ttk::separator .fr.hrule] \
 incr row
 
 frame .fr.button -padx 0 -pady 0
-button .fr.button.accept -text $acceptTitle -command onAccept
-button .fr.button.cancel -text $cancelTitle -command onCancel
+button .fr.button.accept -text [lindex $form $Form::Accept] -command onAccept
+button .fr.button.cancel -text [lindex $form $Form::Cancel] -command onCancel
 pack .fr.button.accept -side left -padx 4 -pady 4
 pack .fr.button.cancel -side left -padx 4 -pady 4
 grid .fr.button -row $row -columnspan 2 -sticky e
 
 pack .fr -padx 8 -pady 8
 
-wm title . $formTitle
+wm title . [lindex $form $Form::Title]
 # not resizable
 wm resizable . 0 0
 # position
 wm geometry . +450+200
 
-after idle focus -force .fr.entry[lindex [lindex $fields 0] 0]
-
-set mapOfSpecialChars {
-    "\\" "\\\\" "\"" "\\\"" "\b" "\\b" "\f" "\\f" "\n" "\\n" "\r" "\\r" "\t" "\\t"
-}
-
-proc escapeSpecialChars {text} {
-    return [string map $::mapOfSpecialChars $text]
-}
-
-proc readForm {_errors} {
-    upvar $_errors errors
-    set errors 0
-
-    global fields
-    set result ""
-
-    append result "\{\n  \"form\": \"$::formName\",\n  \"fields\": \{\n"
-    foreach field $fields {
-        set name        [lindex $field $Field::Name]
-        set value       [escapeSpecialChars [string trim [.fr.entry$name get]]]
-        set newline     [expr {[lindex $fields end] != $field ? ",\n" : "\n"}]
-
-        set length      [string length $value]
-        set minLength   [lindex $field $Field::MinLength]
-        set maxLength   [lindex $field $Field::MaxLength]
-
-        if {$length < $minLength} {
-            puts stderr "Error testing minLength '$minLength' on field '$name'"
-            incr errors
-        } elseif {$length > $maxLength} {
-            puts stderr "Error testing maxLength '$maxLength' on field '$name'"
-            incr errors
-        }
-        append result "    \"$name\": \"$value\"$newline"
-    }
-    append result "  \}\n\}"
-    return $result
-}
+after idle focus -force [lindex $widgets 0]
 
 proc onAccept {} {
-    set errors 0
-    set result [readForm errors]
+    set errors ""
+    set result [readForm [lindex $::form $Form::Name] errors]
 
-    if {$errors > 0} {
-        puts stderr "$errors errors found\n\nInvalid data:\n$result"
+    if {$errors ne ""} {
+        puts stderr "$errors\n\"invalid-data\": $result"
         exit 1
     } else {
         puts stdout $result

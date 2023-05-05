@@ -1,16 +1,23 @@
-set formName clientes
-set formTitle "Clientes"
-
-#       Name           Title           Width MinLength MaxLength
-set fields {
-    {   id             "Código"        5       1       5       }
-    {   name           "Nombre"        50      1       50      }
-    {   street         "Dirección"     50      0       50      }
-    {   postcode       "Cód. Postal"   5       0       50      }
-    {   phone          "Teléfono"      50      0       50      }
-    {   email          "e-mail"        50      0       255     }
+#   Name        Title       Accept      Cancel
+set form {
+    "clientes"  "Clientes"  "Aceptar"   "Cancelar"
 }
 
-set acceptTitle "Aceptar"
-set cancelTitle "Cancelar"
+#       Widget  Title/Name      Type        Width  Height   MinLen  MaxLen RegExp
+set fields {
+    {   label   "Código"                                                                }
+    {   entry   id              integer     5       1       1       5       ""          }
+    {   label   "Nombre"                                                                }
+    {   entry   name            string      50      1       1       50      ""          }
+    {   label   "Dirección"                                                             }
+    {   entry   street          string      50      1       0       50      ""          }
+    {   label   "Cód. Postal"                                                           }
+    {   entry   postcode        string      5       1       5       5       "^[0-9]*$"  }
+    {   label   "Teléfono"                                                              }
+    {   entry   phone           string      50      1       0       50      ""          }
+    {   label   "e-mail"                                                                }
+    {   entry   email           string      50      1       0       255     ""          }
+    {   label   "Notas"                                                                 }
+    {   text    notes           string      50      2       0       50      ""          }
+}
 
