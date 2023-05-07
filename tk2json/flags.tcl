@@ -19,10 +19,10 @@ proc setFlag {flags flag} {
         # Justify
         1 -
         2 -
-        4  { return [expr ($flags & ~(1 | 2 | 4)) | $flag] }
+        4  {return [expr ($flags & ~(1 | 2 | 4)) | $flag]}
         # ValidateKey
         8 -
-        16 { return [expr ($flags & ~(8 | 16)) | $flag] }
+        16 {return [expr ($flags & ~(8 | 16)) | $flag]}
     }
     return 0
 }
