@@ -31,25 +31,42 @@ oo::class create Table {
         incr rows
     }
 
+    method justify {} {
+        set flags [lindex $::flags end]
+
+        if {$flags & $Flags::JustifyCenter} {
+            return "center"
+        }
+        if {$flags & $Flags::JustifyRight} {
+            return "right"
+        }
+        return ""
+    }
+
     method widget {field type} {
         set name    [lindex $field $Field::Name]
-        set width   [lindex $field $Field::Width]
-        set height  [lindex $field $Field::Height]
         set widget  .table.field_$name
 
         switch $type {
             entry {
-                $type $widget -highlightthickness 0 \
-                    -width [expr {$width + 1}] \
-                    -validate key \
+                $type $widget -highlightthickness 0 -validate key \
                     -validatecommand {validateEntry %W %P %i}
+                if {[set justify [my justify]] ne ""} {
+                    $widget configure -justify $justify
+                }
             }
             text {
-                $type $widget -highlightthickness 0 \
-                    -width [expr {$width + 1}] -height $height   
+                set height [lindex $field $Field::Height]
+
+                $type $widget -highlightthickness 0 -height $height   
             }
         }
-        grid $widget -row $rows -column 1 -sticky w -padx 4 -pady 2
+        if {[set width [lindex $field $Field::Width]] != 0} {
+            $widget configure -width [expr {$width + 1}]
+            grid $widget -row $rows -column 1 -sticky w -padx 4 -pady 2
+        } else {
+            grid $widget -row $rows -column 1 -sticky ew -padx 4 -pady 2
+        }
         incr rows
         return $widget
     }
@@ -68,21 +85,22 @@ oo::class create Table {
 }
 
 proc validateEntry {name text length} {
-    if {$text eq ""} {
-        return 1
-    }
-
-    set field [lindex $::fields [lsearch -exact $::widgets $name]]
+    set index [lsearch -exact $::widgets $name]
+    set field [lindex $::fields $index]
 
     if {$length >= [lindex $field $Field::MaxLength]} {
         return 0
     }
-    switch [lindex $field $Field::Type] {
-        real    {set mask "0123456789"}
-        integer {set mask "0123456789-"}
-        number  {set mask "0123456789-."}
-        default {return 1}
+
+    set flags [lindex $::flags $index]
+
+    if {$flags & $Flags::ValidateKeyTrue} {
+        set regExp [lindex $field $Field::RegExp]
+
+        if {($regExp ne "") && ([regexp $regExp $text] != 1)} {
+            return 0
+        }
     }
-    return [expr {[string first [string index $text end] $mask] != -1}]
+    return 1
 }
 

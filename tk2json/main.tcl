@@ -2,6 +2,7 @@
 
 source builder.tcl
 source convert.tcl
+source flags.tcl
 source data.tcl
 
 namespace eval Form {
@@ -20,10 +21,12 @@ namespace eval Field {
     set MinLength   5
     set MaxLength   6
     set RegExp      7
+    set Flags       8
 }
 
 set table [Table new]
 set widgets {}
+set flags {}
 
 # Pack labels and widgets
 foreach field $fields {
@@ -38,12 +41,15 @@ foreach field $fields {
             $table $type $field
         }
         default {
+            lappend flags   [setFlags $field]
             lappend widgets [$table widget $field $type]
         }
     }
 }
 $table hrule
 $table buttons $form
+
+Table destroy
 
 wm title . [lindex $form $Form::Title]
 # not resizable
