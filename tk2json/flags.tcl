@@ -1,5 +1,5 @@
 namespace eval Flags {
-    set flags {
+    set Items {
         justify:left
         justify:center
         justify:right
@@ -14,40 +14,33 @@ namespace eval Flags {
 }
 
 # Replace existing flags from the group
-proc setFlag {result flag} {
+proc setFlag {flags flag} {
     switch $flag {
         # Justify
         1 -
         2 -
-        4  { return [expr ($result & ~(1 | 2 | 4)) | $flag] }
+        4  { return [expr ($flags & ~(1 | 2 | 4)) | $flag] }
         # ValidateKey
         8 -
-        16 { return [expr ($result & ~(8 | 16)) | $flag] }
+        16 { return [expr ($flags & ~(8 | 16)) | $flag] }
     }
     return 0
 }
 
 proc setFlags {field} {
-    set values [lindex $field $Field::Flags]
-    set result [expr $Flags::JustifyLeft | $Flags::ValidateKeyTrue]
+    set name  [lindex $field $Field::Name]
+    set items [lindex $field $Field::Flags]
+    set flags [expr $Flags::JustifyLeft | $Flags::ValidateKeyTrue]
 
-    foreach item $values {
-        set found 0
-        set count 0
+    foreach item $items {
+        set index [lsearch -exact $Flags::Items $item]
 
-        foreach flag $Flags::flags {
-            if {$item eq $flag} {
-                set result [setFlag $result [expr 1 << $count]]
-                set found 1
-            }
-            incr count
-        }
-        if {$found == 0} {
-            set name [lindex $field $Field::Name]
-
+        if {$index != -1} {
+            set flags [setFlag $flags [expr 1 << $index]]
+        } else {
             puts stderr "'$name': '$item' is not a valid flag"
         }
     }
-    return $result
+    return $flags
 }
 
