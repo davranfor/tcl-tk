@@ -5,53 +5,48 @@ source convert.tcl
 source flags.tcl
 source data.tcl
 
-namespace eval Form {
-    set Name    0
-    set Title   1
-    set Accept  2
-    set Cancel  3
-}
-
 namespace eval Field {
     set Widget      0
+    set Text        1
     set Name        1
     set Type        2
+    set Command     2
     set Width       3
     set Height      4
     set MinLength   5
     set MaxLength   6
     set RegExp      7
-    set Flags       8
+    set Flags       end
 }
 
-set table [Table new]
 set widgets {}
+set fields {}
 set flags {}
 
+set table [Table new]
+
 # Pack labels and widgets
-foreach field $fields {
+foreach field $form {
     set type [lindex $field $Field::Widget]
 
     switch $type {
+        title -
+        pack  -
         label -
-        hrule {
-            set length [llength $widgets]
-            set fields [lreplace $fields $length $length]
-
+        hrule -
+        button {
             $table $type $field
         }
         default {
             lappend flags   [setFlags $field]
-            lappend widgets [$table widget $field $type]
+            lappend widgets [$table $type $field]
+            lappend fields  $field
         }
     }
 }
-$table hrule
-$table buttons $form
 
 Table destroy
 
-wm title . [lindex $form $Form::Title]
 # not resizable
 wm resizable . 0 0
 # position
@@ -71,7 +66,7 @@ bind Button <KP_Enter>  {event generate %W <space>}
 
 proc onAccept {} {
     set errors ""
-    set result [readForm [lindex $::form $Form::Name] errors]
+    set result [readForm $::formName errors]
 
     if {$errors ne ""} {
         puts stderr "$errors\n\"invalid-data\": $result"

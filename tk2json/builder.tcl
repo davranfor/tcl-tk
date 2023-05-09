@@ -1,86 +1,178 @@
 # To call an internal method inside the class use 'my method'
 oo::class create Table {
+    variable frame
+
+    variable packs
     variable labels
     variable hrules
-    variable rows
+    variable buttons
+    variable entries
+    variable texts
+
+    variable packing
+    variable row
+    variable column
 
     constructor {} {
+        set frame .table
+
+        set packs 0
         set labels 0
         set hrules 0
-        set rows 0
+        set buttons 0
+        set entries 0
+        set texts 0
 
-        frame .table -borderwidth 1 -relief raised -padx 4 -pady 4
-        pack .table -padx 8 -pady 8
+        set packing 0
+        set row 0
+        set column 0
+
+        frame $frame -borderwidth 1 -relief raised -padx 4 -pady 4
+        pack $frame -padx 8 -pady 8
+    }
+
+    method add {widget sticky} {
+        switch $packing {
+            1 {
+                if {$sticky eq "ew"} {
+                    pack $widget -side left -padx 2 -pady 2 -fill x -expand 1
+                } else {
+                    pack $widget -side left -padx 2 -pady 2
+                }
+            }
+            0 {
+                grid $widget -row $row -column $column \
+                    -sticky $sticky -padx 4 -pady 2
+                if {$column == 0} {
+                    set column 1
+                } else {
+                    set column 0
+                    incr row
+                }
+            }
+            -1 {
+                if {$column == 1} {
+                    grid $widget -row $row -column $column \
+                        -sticky $sticky -padx 2 -pady 0
+                } else {
+                    grid $widget -row $row -columnspan 2  \
+                        -sticky $sticky -padx 2 -pady 0
+                }
+                set column 0
+                incr row
+            }
+        }
+    }
+
+    method pack {field} {
+        if {$packing == 0} {
+            set frame .table.pack$packs
+            set flags [setFlags $field]
+            set packing -1
+
+            frame $frame -padx 0 -pady 0
+            if {$flags & $Flags::AlignRight} {
+                my add $frame e
+            } else {
+                my add $frame ew
+            }
+
+            set packing 1
+        } else {
+            set frame .table
+            set packing 0
+
+            incr packs
+        }
+    }
+
+    method title {field} {
+        wm title . [lindex $field $Field::Text]
     }
 
     method label {field} {
-        set caption [lindex $field $Field::Name]
-        set widget .table.label_$labels
+        set widget $frame.label$labels
 
-        grid [label $widget -text $caption] \
-            -row $rows -column 0 -sticky w -padx 4 -pady 2
+        label $widget -text [lindex $field $Field::Text]
+        my add $widget w
         incr labels
     }
 
-    method hrule {{field 0}} {
-        set widget .table.hrule_$hrules
+    method hrule {field} {
+        if {$packing != 0} {
+            puts stderr "hrules can't be packed"
+            return
+        }
 
-        grid [ttk::separator $widget] \
-            -row $rows -columnspan 2 -sticky ew -padx 4 -pady 4
+        set widget $frame.hrule$hrules
+
+        ttk::separator $widget
+        if {$column == 0} {
+            grid $widget -row $row -columnspan 2 -sticky ew -padx 4 -pady 4
+        } else {
+            grid $widget -row $row -column 1 -sticky ew -padx 4 -pady 4
+        }
         incr hrules
-        incr rows
+        incr row
+        set column 0
+    }
+
+    method button {field} {
+        set widget $frame.button$buttons
+
+        button $widget -text [lindex $field $Field::Text] \
+            -command [lindex $field $Field::Command]
+        my add $widget w
+        incr buttons
     }
 
     method justify {} {
         set flags [lindex $::flags end]
 
         if {$flags & $Flags::JustifyCenter} {
-            return "center"
+            return center
         }
         if {$flags & $Flags::JustifyRight} {
-            return "right"
+            return right
         }
         return ""
     }
 
-    method widget {field type} {
-        set name    [lindex $field $Field::Name]
-        set widget  .table.field_$name
+    method entry {field} {
+        set widget $frame.entry$entries
+        set sticky w
 
-        switch $type {
-            entry {
-                $type $widget -highlightthickness 0 -validate key \
-                    -validatecommand {validateEntry %W %P %i}
-                if {[set justify [my justify]] ne ""} {
-                    $widget configure -justify $justify
-                }
-            }
-            text {
-                set height [lindex $field $Field::Height]
-
-                $type $widget -highlightthickness 0 -height $height   
-            }
-        }
+        entry $widget -highlightthickness 0 -validate key \
+            -validatecommand {validateEntry %W %P %i}
         if {[set width [lindex $field $Field::Width]] != 0} {
             $widget configure -width [expr {$width + 1}]
-            grid $widget -row $rows -column 1 -sticky w -padx 4 -pady 2
         } else {
-            grid $widget -row $rows -column 1 -sticky ew -padx 4 -pady 2
+            $widget configure -width 1
+            set sticky ew
         }
-        incr rows
+        if {[set justify [my justify]] ne ""} {
+            $widget configure -justify $justify
+        }
+        my add $widget $sticky
+        incr entries
         return $widget
     }
 
-    method buttons {form} {
-        frame .table.buttons -padx 0 -pady 0
-        button .table.buttons.accept \
-            -text [lindex $form $Form::Accept] -command onAccept
-        button .table.buttons.cancel \
-            -text [lindex $form $Form::Cancel] -command onCancel
-        pack .table.buttons.accept -side left -padx 4 -pady 4
-        pack .table.buttons.cancel -side left -padx 4 -pady 4
-        grid .table.buttons -row $rows -columnspan 2 -sticky e
-        incr rows
+    method text {field} {
+        set widget $frame.text$texts
+        set sticky w
+
+        text $widget -highlightthickness 0 \
+            -height [lindex $field $Field::Height]
+        if {[set width [lindex $field $Field::Width]] != 0} {
+            $widget configure -width [expr {$width + 1}]
+        } else {
+            $widget configure -width 1
+            set sticky ew
+        }
+        my add $widget $sticky
+        incr texts
+        return $widget
     }
 }
 
@@ -91,10 +183,7 @@ proc validateEntry {name text length} {
     if {$length >= [lindex $field $Field::MaxLength]} {
         return 0
     }
-
-    set flags [lindex $::flags $index]
-
-    if {$flags & $Flags::ValidateKeyTrue} {
+    if {[lindex $::flags $index] & $Flags::ValidateKeyTrue} {
         set regExp [lindex $field $Field::RegExp]
 
         if {($regExp ne "") && ([regexp $regExp $text] != 1)} {

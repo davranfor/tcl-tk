@@ -31,13 +31,13 @@ proc readForm {form _errors} {
         set maxLength   [lindex $field $Field::MaxLength]
 
         if {($length < $minLength) || ($length > $maxLength)} {
-            append errors "'$name': Length not in range ($minLength, $maxLength)\n"
+            append errors "$name: Length not in range ($minLength, $maxLength)\n"
         }
 
         set regExp [lindex $field $Field::RegExp]
 
         if {($regExp ne "") && ([regexp $regExp $value] != 1)} {
-            append errors "'$name': RegExp $regExp doesn't match\n"
+            append errors "$name: RegExp $regExp doesn't match\n"
         }
 
         set quote [expr {[lindex $field $Field::Type] == "string" ? "\"" : ""}]
